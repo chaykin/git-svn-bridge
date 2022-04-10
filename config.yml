@@ -1,0 +1,3 @@
+reposRoot: "repos"
+dbRoot: ".db"
+dbCacheSize: 1024

@@ -1,8 +1,4 @@
-*.swp
-*.dll
-*.exe
-bin/
-obj/
-*.pidb
-*.userprefs
 *.db
+*.idea
+git-svn-bridge
+pid.lock
