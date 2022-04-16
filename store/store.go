@@ -29,8 +29,20 @@ func GetRepo(name string) repo.Repo {
 	return repo.CreateRepo(storeItem.Name, storeItem.SvnUrl)
 }
 
-func GetRepoUsers(repo repo.Repo) []usr.User {
-	prefix := fmt.Sprintf("%s/users/", repo.GetName())
+func StoreUser(user usr.User) {
+	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetGitUserFullName(), user.GetEmail()}
+	storeItem(getUserKey(user.GetRepo(), user.GetGitUserName()), userStoreItem)
+}
+
+func GetUser(repo *repo.Repo, gitUserName string) usr.User {
+	var storeItem userStoreItem
+	getItem(getUserKey(repo, gitUserName), &storeItem)
+
+	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
+}
+
+func GetAllUsers(repo *repo.Repo) []usr.User {
+	prefix := getUserKey(repo, "")
 	userKeysChan := getStore().KeysPrefix(prefix, nil)
 
 	var users []usr.User
@@ -43,18 +55,6 @@ func GetRepoUsers(repo repo.Repo) []usr.User {
 	}
 
 	return users
-}
-
-func StoreUser(user usr.User) {
-	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetGitUserFullName(), user.GetEmail()}
-	storeItem(getUserKey(user.GetRepo(), user.GetGitUserName()), userStoreItem)
-}
-
-func GetUser(repo repo.Repo, gitUserName string) usr.User {
-	var storeItem userStoreItem
-	getItem(getUserKey(repo, gitUserName), &storeItem)
-
-	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
 }
 
 func storeItem(key string, item interface{}) {

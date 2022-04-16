@@ -49,7 +49,7 @@ func (c *CommandExecutor) Fetch(repoPath string) error {
 
 func (c *CommandExecutor) createAuthorsFile() error {
 	userRepo := c.user.GetRepo()
-	users := store.GetRepoUsers(userRepo)
+	users := store.GetAllUsers(userRepo)
 
 	authorsFile, err := os.Create(conf.GetConfig().AuthorsFile)
 	if err != nil {
@@ -81,11 +81,12 @@ func (c *CommandExecutor) createAuthorsFile() error {
 func getAuthorsFilePath(config *conf.Config) (string, error) {
 	authorsFile := config.AuthorsFile
 	if !filepath.IsAbs(authorsFile) {
-		ex, err := os.Executable()
+		wd, err := os.Getwd()
+		fmt.Println(wd)
 		if err != nil {
 			return "", err
 		}
-		authorsFile = filepath.Join(filepath.Dir(ex), authorsFile)
+		authorsFile = filepath.Join(wd, authorsFile)
 	}
 	return authorsFile, nil
 }

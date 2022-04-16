@@ -37,7 +37,7 @@ func addRepoUser(_ *cobra.Command, args []string) error {
 	gitFullUserName := readFieldFromInput("Git full user name")
 
 	repo := store.GetRepo(repoName)
-	user := usr.CreateUser(repo, svnUserName, pass, gitUserName, gitFullUserName, mail)
+	user := usr.CreateUser(&repo, svnUserName, pass, gitUserName, gitFullUserName, mail)
 	store.StoreUser(user)
 
 	return nil

@@ -22,6 +22,6 @@ func getRepoKey(name string) string {
 	return fmt.Sprintf("%s/repo", name)
 }
 
-func getUserKey(repo repo.Repo, email string) string {
-	return fmt.Sprintf("%s/users/%s", repo.GetName(), email)
+func getUserKey(repo *repo.Repo, gitUserName string) string {
+	return fmt.Sprintf("%s/users/%s", repo.GetName(), gitUserName)
 }
