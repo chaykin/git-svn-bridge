@@ -11,10 +11,11 @@ type repoStoreItem struct {
 }
 
 type userStoreItem struct {
-	SvnUserName string
-	SvnPass     string
-	GitUserName string
-	Email       string
+	SvnUserName     string
+	SvnPass         string
+	GitUserName     string
+	GitUserFullName string
+	Email           string
 }
 
 func getRepoKey(name string) string {

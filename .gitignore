@@ -1,4 +1,6 @@
 *.db
 *.idea
 git-svn-bridge
+authorsFile.txt
+repos
 pid.lock

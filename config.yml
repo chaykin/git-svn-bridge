@@ -1,3 +1,6 @@
 reposRoot: "repos"
 dbRoot: ".db"
 dbCacheSize: 1024
+
+authorsFile: "authorsFile.txt"
+logWindowsSize: 10000

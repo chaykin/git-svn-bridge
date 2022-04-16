@@ -17,7 +17,7 @@ var createRepoCmd = &cobra.Command{
 
 func init() {
 	createRepoCmd.PersistentFlags().StringVarP(&createRepoName, "name", "n", "", "repository name")
-	repoCmd.AddCommand(createRepoCmd)
+	rootCmd.AddCommand(createRepoCmd)
 }
 
 func createRepo(_ *cobra.Command, args []string) {

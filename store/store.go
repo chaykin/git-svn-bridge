@@ -29,16 +29,32 @@ func GetRepo(name string) repo.Repo {
 	return repo.CreateRepo(storeItem.Name, storeItem.SvnUrl)
 }
 
-func StoreUser(user usr.User) {
-	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetEmail()}
-	storeItem(getUserKey(user.GetRepo(), user.GetEmail()), userStoreItem)
+func GetRepoUsers(repo repo.Repo) []usr.User {
+	prefix := fmt.Sprintf("%s/users/", repo.GetName())
+	userKeysChan := getStore().KeysPrefix(prefix, nil)
+
+	var users []usr.User
+	for userKey := range userKeysChan {
+		var storeItem userStoreItem
+		getItem(userKey, &storeItem)
+		user := usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
+
+		users = append(users, user)
+	}
+
+	return users
 }
 
-func GetUser(repo repo.Repo, email string) usr.User {
-	var storeItem userStoreItem
-	getItem(getUserKey(repo, email), &storeItem)
+func StoreUser(user usr.User) {
+	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetGitUserFullName(), user.GetEmail()}
+	storeItem(getUserKey(user.GetRepo(), user.GetGitUserName()), userStoreItem)
+}
 
-	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.Email)
+func GetUser(repo repo.Repo, gitUserName string) usr.User {
+	var storeItem userStoreItem
+	getItem(getUserKey(repo, gitUserName), &storeItem)
+
+	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
 }
 
 func storeItem(key string, item interface{}) {
@@ -95,5 +111,9 @@ func advancedTransform(key string) *diskv.PathKey {
 }
 
 func inverseTransform(pathKey *diskv.PathKey) (key string) {
-	return strings.Join(pathKey.Path, "/") + pathKey.FileName[:len(pathKey.FileName)]
+	parentPath := strings.Join(pathKey.Path, "/")
+	if parentPath != "" {
+		parentPath += "/"
+	}
+	return parentPath + pathKey.FileName
 }

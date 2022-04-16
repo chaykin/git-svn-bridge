@@ -12,6 +12,9 @@ type Config struct {
 	ReposRoot   string `yaml:"reposRoot"`
 	DbRoot      string `yaml:"dbRoot"`
 	DbCacheSize uint64 `yaml:"dbCacheSize"`
+
+	AuthorsFile    string `yaml:"authorsFile"`
+	LogWindowsSize uint   `yaml:"logWindowsSize"`
 }
 
 func GetConfig() *Config {

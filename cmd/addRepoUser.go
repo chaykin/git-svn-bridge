@@ -17,7 +17,7 @@ var addRepoUserCmd = &cobra.Command{
 }
 
 func init() {
-	repoCmd.AddCommand(addRepoUserCmd)
+	rootCmd.AddCommand(addRepoUserCmd)
 }
 
 func addRepoUser(_ *cobra.Command, args []string) error {
@@ -31,12 +31,13 @@ func addRepoUser(_ *cobra.Command, args []string) error {
 	fmt.Printf("Adding/overwriting SVN usr: %s\n", svnUserName)
 
 	pass := readPassFromInput()
-	mail := readFieldFromInput("e-mail")
 	//TODO: check mail valid
+	mail := readFieldFromInput("e-mail")
 	gitUserName := readFieldFromInput("Git user name")
+	gitFullUserName := readFieldFromInput("Git full user name")
 
 	repo := store.GetRepo(repoName)
-	user := usr.CreateUser(repo, svnUserName, pass, gitUserName, mail)
+	user := usr.CreateUser(repo, svnUserName, pass, gitUserName, gitFullUserName, mail)
 	store.StoreUser(user)
 
 	return nil

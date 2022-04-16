@@ -6,11 +6,12 @@ import (
 )
 
 type User struct {
-	repo        repo.Repo
-	svnUserName string
-	svnPass     string
-	gitUserName string
-	email       string
+	repo            repo.Repo
+	svnUserName     string
+	svnPass         string
+	gitUserName     string
+	gitUserFullName string
+	email           string
 }
 
 func (u *User) GetRepo() repo.Repo {
@@ -33,14 +34,18 @@ func (u *User) GetGitUserName() string {
 	return u.gitUserName
 }
 
+func (u *User) GetGitUserFullName() string {
+	return u.gitUserFullName
+}
+
 func (u *User) GetEmail() string {
 	return u.email
 }
 
-func CreateUser(repo repo.Repo, svnUserName, svnPass, gitUserName, email string) User {
-	return User{repo, svnUserName, crypt.Encrypt(svnPass), gitUserName, email}
+func CreateUser(repo repo.Repo, svnUserName, svnPass, gitUserName, gitUserFullName, email string) User {
+	return User{repo, svnUserName, crypt.Encrypt(svnPass), gitUserName, gitUserFullName, email}
 }
 
-func CreateEncryptedUser(repo repo.Repo, svnUserName, svnPass, gitUserName, email string) User {
-	return User{repo, svnUserName, svnPass, gitUserName, email}
+func CreateEncryptedUser(repo repo.Repo, svnUserName, svnPass, gitUserName, gitUserFullName, email string) User {
+	return User{repo, svnUserName, svnPass, gitUserName, gitUserFullName, email}
 }
