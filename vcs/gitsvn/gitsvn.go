@@ -24,8 +24,7 @@ func CreateExecutor(user usr.User) CommandExecutor {
 }
 
 func (c *CommandExecutor) Init(repoPath string) error {
-	userRepo := c.user.GetRepo()
-	command := fmt.Sprintf("-t tags -b branches -T trunk %s %s", userRepo.GetSvnUrl(), repoPath)
+	command := fmt.Sprintf("-t tags -b branches -T trunk %s %s", c.user.GetRepo().GetSvnUrl(), repoPath)
 
 	return c.executeCommand("init", command)
 }
@@ -38,7 +37,7 @@ func (c *CommandExecutor) Fetch(repoPath string) error {
 
 	config := conf.GetConfig()
 
-	authorsFile, err := getAuthorsFilePath(config)
+	authorsFile, err := filepath.Abs(config.AuthorsFile)
 	if err != nil {
 		return fmt.Errorf("could not resolve authors file path: %w", err)
 	}
@@ -47,9 +46,25 @@ func (c *CommandExecutor) Fetch(repoPath string) error {
 	return c.executeCommandEx(repoPath, "fetch", command)
 }
 
+func (c *CommandExecutor) Commit(repoPath string) error {
+	err := c.createAuthorsFile()
+	if err != nil {
+		return err
+	}
+
+	config := conf.GetConfig()
+
+	authorsFile, err := filepath.Abs(config.AuthorsFile)
+	if err != nil {
+		return fmt.Errorf("could not resolve authors file path: %w", err)
+	}
+
+	command := fmt.Sprintf("--authors-file=%s", authorsFile)
+	return c.executeCommandEx(repoPath, "dcommit", command)
+}
+
 func (c *CommandExecutor) createAuthorsFile() error {
-	userRepo := c.user.GetRepo()
-	users := store.GetAllUsers(userRepo)
+	users := store.GetAllUsers(c.user.GetRepo())
 
 	authorsFile, err := os.Create(conf.GetConfig().AuthorsFile)
 	if err != nil {
@@ -78,26 +93,12 @@ func (c *CommandExecutor) createAuthorsFile() error {
 	return nil
 }
 
-func getAuthorsFilePath(config *conf.Config) (string, error) {
-	authorsFile := config.AuthorsFile
-	if !filepath.IsAbs(authorsFile) {
-		wd, err := os.Getwd()
-		fmt.Println(wd)
-		if err != nil {
-			return "", err
-		}
-		authorsFile = filepath.Join(wd, authorsFile)
-	}
-	return authorsFile, nil
-}
-
 func (c *CommandExecutor) executeCommand(cmdName, cmdArgs string) error {
 	return c.executeCommandEx("", cmdName, cmdArgs)
 }
 
 func (c *CommandExecutor) executeCommandEx(cmdDir, cmdName, cmdArgs string) error {
-	userRepo := c.user.GetRepo()
-	repoName := userRepo.GetName()
+	repoName := c.user.GetRepo().GetName()
 
 	command := fmt.Sprintf(commandPattern, cmdName, c.user.GetSvnUserName(), cmdArgs)
 	commandArgs := strings.Split(command, " ")

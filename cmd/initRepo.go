@@ -3,19 +3,22 @@ package cmd
 import (
 	"errors"
 	"fmt"
-	"git-svn-bridge/gitsvn"
+	"git-svn-bridge/conf"
 	"git-svn-bridge/repo"
 	"git-svn-bridge/store"
+	"git-svn-bridge/vcs/gitsvn"
+	"git-svn-bridge/vcs/gitutils"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/spf13/cobra"
+	"path/filepath"
 )
 
 var initRepoCmd = &cobra.Command{
-	Use:   "init <repo-name> <git-user-name>",
+	Use:   "init <repo-name>",
 	Short: "Initialize repo",
 	Long:  "Initialize repo: create GIT server repo, bridge repo, config hooks, etc",
-	Args:  cobra.ExactArgs(2),
+	Args:  cobra.ExactArgs(1),
 	RunE:  initRepo,
 }
 
@@ -25,7 +28,6 @@ func init() {
 
 func initRepo(_ *cobra.Command, args []string) error {
 	repoName := args[0]
-	gitUserName := args[1]
 	if !store.HasRepo(repoName) {
 		return errors.New("There is no repo with name " + repoName)
 	}
@@ -36,7 +38,7 @@ func initRepo(_ *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("could not init git repo '%s': %w", repoName, err)
 	}
-	err = initBridgeRepo(&repo, gitUserName)
+	err = initBridgeRepo(&repo)
 	if err != nil {
 		return fmt.Errorf("could not init bridge repo '%s': %w", repoName, err)
 	}
@@ -61,11 +63,11 @@ func initGitRepo(repo *repo.Repo) error {
 	return nil
 }
 
-func initBridgeRepo(repo *repo.Repo, gitUserName string) error {
-	user := store.GetUser(repo, gitUserName)
+func initBridgeRepo(repo *repo.Repo) error {
+	systemUser := store.GetUser(repo, conf.GetConfig().SystemGitUserName)
 	bridgeRepoPath := repo.GetBridgeRepoPath()
 
-	gitSvnExecutor := gitsvn.CreateExecutor(user)
+	gitSvnExecutor := gitsvn.CreateExecutor(systemUser)
 	err := gitSvnExecutor.Init(bridgeRepoPath)
 	if err != nil {
 		return fmt.Errorf("could not init bridge repo '%s': %w", repo.GetName(), err)
@@ -81,12 +83,12 @@ func initBridgeRepo(repo *repo.Repo, gitUserName string) error {
 		return fmt.Errorf("could not open bridge repo '%s': %w", repo.GetName(), err)
 	}
 
-	err = createRemote(gitRepo, "git-central-repo", repo.GetGitRepoPath())
+	err = createRemote(gitRepo, gitutils.GitCentralRepoName, repo.GetGitRepoPath())
 	if err != nil {
 		return fmt.Errorf("could not create remote for git repo '%s': %w", repo.GetName(), err)
 	}
 
-	err = gitRepo.Push(&git.PushOptions{RemoteName: "git-central-repo"})
+	err = gitRepo.Push(&git.PushOptions{RemoteName: gitutils.GitCentralRepoName})
 	if err != nil {
 		return fmt.Errorf("could not push from bridge repo '%s': %w", repo.GetName(), err)
 	}
@@ -95,9 +97,14 @@ func initBridgeRepo(repo *repo.Repo, gitUserName string) error {
 }
 
 func createRemote(gitRepo *git.Repository, name, path string) error {
-	_, err := gitRepo.CreateRemote(&config.RemoteConfig{
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		return fmt.Errorf("could not resolve absolute path for '%s': %w", path, err)
+	}
+
+	_, err = gitRepo.CreateRemote(&config.RemoteConfig{
 		Name: name,
-		URLs: []string{path},
+		URLs: []string{absPath},
 	})
 
 	return err

@@ -15,6 +15,9 @@ type Config struct {
 
 	AuthorsFile    string `yaml:"authorsFile"`
 	LogWindowsSize uint   `yaml:"logWindowsSize"`
+
+	SystemGitUserName   string `yaml:"systemGitUserName"`
+	CommitMessageFormat string `yaml:"commitMessageFormat"`
 }
 
 func GetConfig() *Config {
