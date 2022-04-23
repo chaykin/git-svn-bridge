@@ -123,7 +123,13 @@ func (c *CommandExecutor) executeCommandEx(cmdDir, cmdName, cmdArgs string) erro
 
 	out, err := systemCmd.CombinedOutput()
 	if err != nil {
-		fmt.Printf("%s\n", out)
+		exitError, ok := err.(*exec.ExitError)
+		if ok {
+			fmt.Printf("%s\nExit code: %d\n", out, exitError.ExitCode())
+		} else {
+			fmt.Printf("%s\n", out)
+		}
+
 		return fmt.Errorf("could not execute command '%s' for repo '%s': %w", cmdName, repoName, err)
 	}
 

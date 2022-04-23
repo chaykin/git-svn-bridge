@@ -14,6 +14,8 @@ import (
 	"strings"
 )
 
+const maxRetryCount = 3
+
 type Manager struct {
 	repo *repo.Repo
 
@@ -21,6 +23,7 @@ type Manager struct {
 	centralRepo *git.Repository
 
 	isSvnFetched bool
+	retryCount   int
 }
 
 func New(repoName string) (*Manager, error) {
@@ -43,7 +46,7 @@ func New(repoName string) (*Manager, error) {
 		return nil, fmt.Errorf("could not open central repoInfo '%s': %w", repoName, err)
 	}
 
-	return &Manager{repo: &repoInfo, bridgeRepo: bridgeRepo, centralRepo: centralRepo, isSvnFetched: false}, nil
+	return &Manager{repo: &repoInfo, bridgeRepo: bridgeRepo, centralRepo: centralRepo, isSvnFetched: false, retryCount: 0}, nil
 }
 
 func (man *Manager) SyncAllRefs() error {
@@ -92,6 +95,8 @@ func (man *Manager) syncRef(ref string) error {
 		return fmt.Errorf("could not push changes to GIT for repo '%s'(%s): %w", man.repo.GetName(), ref, err)
 	}
 
+	store.RemoveRelation(man.repo, gitutils.GetBranchName(ref))
+	man.retryCount = 0
 	return nil
 }
 
@@ -118,7 +123,20 @@ func (man *Manager) fetchGitChanges(ref string) error {
 
 	if centralRepoRefExists {
 		branchName := gitutils.GetBranchName(ref)
-		return gitutils.PullAndRebase(man.getBridgeRepoPath(), gitutils.GitCentralRepoName, branchName)
+		err = gitutils.PullAndRebase(man.getBridgeRepoPath(), gitutils.GitCentralRepoName, branchName)
+		if err != nil {
+			err := gitutils.AbortRebase(man.getBridgeRepoPath())
+			if err != nil {
+				return err
+			}
+
+			//There are a conflicts! Handle with it...
+			conflictBranch, err := (&conflictHandler{man: man}).handleConflict(ref)
+			if err != nil {
+				err = fmt.Errorf("could not handleConflict conflicts for repo '%s'(%s): %w", man.repo.GetName(), ref, err)
+			}
+			return errors.New("Could not sync changes with SVN. You must resolve conflicts manually in branch " + conflictBranch)
+		}
 	}
 
 	return nil
@@ -131,7 +149,7 @@ func (man *Manager) pushRefToSvn(ref string) error {
 		return err
 	}
 
-	err = man.checkoutToOriginRef(ref)
+	err = man.checkoutToOriginRef(getParentRef(man.repo, ref))
 	if err != nil {
 		return fmt.Errorf("could not checkout detached head for repo '%s'(%s): %w", man.repo.GetName(), ref, err)
 	}
@@ -149,7 +167,19 @@ func (man *Manager) pushRefToSvn(ref string) error {
 	// Note that we always record the merge with --no-ff
 	err = gitutils.MergeNoFF(man.getBridgeRepoPath(), commitMessage, branchName)
 	if err != nil {
-		return err
+		fmt.Println(err)
+
+		err := gitutils.AbortMerge(man.getBridgeRepoPath())
+		if err != nil {
+			return err
+		}
+
+		//There are a conflicts! Handle with it...
+		conflictBranch, err := (&conflictHandler{man: man}).handleConflict(ref)
+		if err != nil {
+			err = fmt.Errorf("could not handleConflict conflicts for repo '%s'(%s): %w", man.repo.GetName(), ref, err)
+		}
+		return errors.New("Could not sync changes with SVN. You must resolve conflicts manually in branch " + conflictBranch)
 	}
 
 	//commit changes to SVN
@@ -157,27 +187,21 @@ func (man *Manager) pushRefToSvn(ref string) error {
 	gitSvnExecutor := gitsvn.CreateExecutor(commitUser)
 	err = gitSvnExecutor.Commit(man.getBridgeRepoPath())
 	if err != nil {
-		panic(err)
-		//TODO надо различать разные ошибки...
+		man.retryCount++
+		if man.retryCount >= maxRetryCount {
+			return fmt.Errorf("too many tries to push to SVN ror repo '%s'(%s): %w", man.repo.GetName(), ref, err)
+		}
 
-		/*
-			# if "Transaction is out of date: File '/Prj/trunk/main.txt' is out of date": git svn --authors-file="$HOME/git/git-svn-bridge-authors" fetch
-			# if  КОНФЛИКТ (содержимое): Конфликт слияния в trunk/main.txt: git rebase --abort git merge --abort
-			# git checkout svn/git-svn
-			# git branch bridge-branch-1 sha-1
-			# git checkout bridge-branch-1
-			# git merge svn/git-svn
-			#local CENTRAL_REPO_PATH="`git remote -v show | awk 'NR > 1 { exit }; { print $2 };'`"
-			#pushd "$CENTRAL_REPO_PATH"
-			#git fetch svn-bridge bridge-branch-1:bridge-branch-1
-			#popd
-		*/
+		// Guess somebody commit to SVN just now. Try to fetch changes again
+		return man.syncRef(ref)
 	}
 
 	return nil
 }
 
 func (man *Manager) pushRefToGit(ref string) error {
+	ref = getParentRef(man.repo, ref)
+
 	err := man.checkoutToRef(ref)
 	if err != nil {
 		return err

@@ -5,57 +5,11 @@ import (
 	"encoding/gob"
 	"fmt"
 	"git-svn-bridge/conf"
-	"git-svn-bridge/repo"
-	"git-svn-bridge/usr"
 	"github.com/peterbourgon/diskv/v3"
 	"strings"
 )
 
 var store *diskv.Diskv
-
-func StoreRepo(repo repo.Repo) {
-	repoStoreItem := repoStoreItem{Name: repo.GetName(), SvnUrl: repo.GetSvnUrl()}
-	storeItem(getRepoKey(repoStoreItem.Name), repoStoreItem)
-}
-
-func HasRepo(name string) bool {
-	return getStore().Has(getRepoKey(name))
-}
-
-func GetRepo(name string) repo.Repo {
-	var storeItem repoStoreItem
-	getItem(getRepoKey(name), &storeItem)
-
-	return repo.CreateRepo(storeItem.Name, storeItem.SvnUrl)
-}
-
-func StoreUser(user usr.User) {
-	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetGitUserFullName(), user.GetEmail()}
-	storeItem(getUserKey(user.GetRepo(), user.GetGitUserName()), userStoreItem)
-}
-
-func GetUser(repo *repo.Repo, gitUserName string) usr.User {
-	var storeItem userStoreItem
-	getItem(getUserKey(repo, gitUserName), &storeItem)
-
-	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
-}
-
-func GetAllUsers(repo *repo.Repo) []usr.User {
-	prefix := getUserKey(repo, "")
-	userKeysChan := getStore().KeysPrefix(prefix, nil)
-
-	var users []usr.User
-	for userKey := range userKeysChan {
-		var storeItem userStoreItem
-		getItem(userKey, &storeItem)
-		user := usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
-
-		users = append(users, user)
-	}
-
-	return users
-}
 
 func storeItem(key string, item interface{}) {
 	var buf bytes.Buffer

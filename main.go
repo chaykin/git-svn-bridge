@@ -2,7 +2,6 @@ package main
 
 import (
 	"git-svn-bridge/cmd"
-
 	"git-svn-bridge/plock"
 )
 

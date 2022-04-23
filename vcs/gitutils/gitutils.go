@@ -108,6 +108,14 @@ func Merge(repoPath, branch string) error {
 	return executeCommand(repoPath, command)
 }
 
+func AbortMerge(repoPath string) error {
+	return executeCommand(repoPath, "git merge --abort")
+}
+
+func AbortRebase(repoPath string) error {
+	return executeCommand(repoPath, "git rebase --abort")
+}
+
 func Fetch(repoPath, remote, branch string) error {
 	command := fmt.Sprintf("git fetch %s %s:%s", remote, branch, branch)
 	return executeCommand(repoPath, command)
