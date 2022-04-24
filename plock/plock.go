@@ -1,14 +1,13 @@
 package plock
 
 import (
-	"fmt"
+	"git-svn-bridge/log"
 	"github.com/juju/fslock"
 )
 
 func Lock() {
 	lock := fslock.New("pid.lock")
-	err := lock.Lock()
-	if err != nil {
-		panic(fmt.Errorf("could not acquire a lock: %w", err))
+	if err := lock.Lock(); err != nil {
+		log.Fatalf("could not acquire a lock: %w", err)
 	}
 }

@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+	"git-svn-bridge/log"
 	"git-svn-bridge/sync"
 	"github.com/spf13/cobra"
 )
@@ -9,28 +11,25 @@ var syncRepoName string
 var syncRepoCmd = &cobra.Command{
 	Use:   "sync <ref1>..<refN> ",
 	Short: "Create repository configuration",
-	RunE:  syncRepo,
+	Run:   syncRepo,
 }
 
 func init() {
 	syncRepoCmd.PersistentFlags().StringVarP(&syncRepoName, "repo", "r", "", "repository name")
-	err := syncRepoCmd.MarkPersistentFlagRequired("repo")
-	if err != nil {
-		panic(err)
+	if err := syncRepoCmd.MarkPersistentFlagRequired("repo"); err != nil {
+		log.Fatalf("could not init sync command: %w", err)
 	}
 
 	rootCmd.AddCommand(syncRepoCmd)
 }
 
-func syncRepo(_ *cobra.Command, args []string) error {
-	man, err := sync.New(syncRepoName)
-	if err != nil {
-		return err
-	}
+func syncRepo(_ *cobra.Command, args []string) {
+	defer log.OnPanicf(fmt.Errorf("could not sync repository '%s'", syncRepoName))
 
+	man := sync.New(syncRepoName)
 	if len(args) == 0 {
-		return man.SyncAllRefs()
+		man.SyncAllRefs()
 	} else {
-		return man.SyncRefs(args)
+		man.SyncRefs(args)
 	}
 }

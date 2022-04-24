@@ -4,6 +4,7 @@ import (
 	"crypto/aes"
 	"crypto/cipher"
 	"crypto/rand"
+	"fmt"
 )
 
 const SECRET = "_____TO BE REPLACED_____"
@@ -11,15 +12,14 @@ const SECRET = "_____TO BE REPLACED_____"
 func Encrypt(value string) string {
 	block, err := aes.NewCipher([]byte(SECRET))
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("could not create new cipher: %w", err))
 	}
 
 	bValue := []byte(value)
 	cipherValue := make([]byte, aes.BlockSize+len(bValue))
 	iv := cipherValue[:aes.BlockSize]
-	_, err = rand.Read(iv)
-	if err != nil {
-		panic(err)
+	if _, err = rand.Read(iv); err != nil {
+		panic(fmt.Errorf("could not read random number: %w", err))
 	}
 
 	encrypter := cipher.NewCFBEncrypter(block, iv)
@@ -31,12 +31,12 @@ func Encrypt(value string) string {
 func Decrypt(value string) string {
 	block, err := aes.NewCipher([]byte(SECRET))
 	if err != nil {
-		panic(err)
+		panic(fmt.Errorf("could not create new cipher: %w", err))
 	}
 
 	bValue := []byte(value)
 	if len(bValue) < aes.BlockSize {
-		panic("Could not decrypt value: [" + value + "]. It is too short")
+		panic(fmt.Errorf("could not decrypt value: [%s ]. It is too short", value))
 	}
 
 	iv := bValue[:aes.BlockSize]

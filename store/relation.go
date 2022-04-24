@@ -33,9 +33,8 @@ func RemoveRelation(repo *repo.Repo, name string) {
 	if relation != nil {
 		for _, key := range []string{getRelKey(repo, relation.GetChild()), getRelKey(repo, relation.GetParent())} {
 			if getStore().Has(key) {
-				err := getStore().Erase(key)
-				if err != nil {
-					panic(fmt.Errorf("could not decode item '%s': %w", key, err))
+				if err := getStore().Erase(key); err != nil {
+					panic(fmt.Errorf("could not erase key '%s': %w", key, err))
 				}
 			}
 		}

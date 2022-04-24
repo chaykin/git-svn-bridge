@@ -18,6 +18,8 @@ type Config struct {
 
 	SystemGitUserName   string `yaml:"systemGitUserName"`
 	CommitMessageFormat string `yaml:"commitMessageFormat"`
+
+	LogFile string `yaml:"logFile"`
 }
 
 func GetConfig() *Config {
@@ -27,16 +29,18 @@ func GetConfig() *Config {
 			panic(fmt.Errorf("could not read config file: %w", err))
 		}
 
-		err = yaml.NewDecoder(confFile).Decode(&config)
-		if err != nil {
-			panic(fmt.Errorf("could not parse config file: %w", err))
-		}
+		defer closeFile(confFile)
 
-		err = confFile.Close()
-		if err != nil {
-			panic(fmt.Errorf("could not close config file: %w", err))
+		if err := yaml.NewDecoder(confFile).Decode(&config); err != nil {
+			panic(fmt.Errorf("could not parse config file: %w", err))
 		}
 	}
 
 	return config
+}
+
+func closeFile(file *os.File) {
+	if err := file.Close(); err != nil {
+		panic(fmt.Errorf("could not close config file: %w", err))
+	}
 }

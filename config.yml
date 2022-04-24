@@ -7,3 +7,5 @@ logWindowsSize: 10000
 
 systemGitUserName: "git-svn-bridge"
 commitMessageFormat: "%B"
+
+logFile: "errors.log"

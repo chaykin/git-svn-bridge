@@ -1,9 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"git-svn-bridge/log"
 	"github.com/spf13/cobra"
-	"os"
 )
 
 var rootCmd = &cobra.Command{
@@ -13,11 +12,7 @@ var rootCmd = &cobra.Command{
 }
 
 func Execute() {
-	err := rootCmd.Execute()
-	if err != nil {
-		_, err = fmt.Fprintln(os.Stderr, err)
-		if err != nil {
-			panic(fmt.Errorf("could not print to stderr: %w", err))
-		}
+	if err := rootCmd.Execute(); err != nil {
+		log.Fatalf("could not execute root command: %w", err)
 	}
 }

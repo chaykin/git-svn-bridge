@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
+	"git-svn-bridge/log"
 	"git-svn-bridge/store"
 	"git-svn-bridge/usr"
 	"github.com/spf13/cobra"
@@ -13,19 +13,21 @@ var addRepoUserCmd = &cobra.Command{
 	Short: "Add user information for the repo",
 	Long:  "Add user credentials for SVN and GIT repositories",
 	Args:  cobra.ExactArgs(2),
-	RunE:  addRepoUser,
+	Run:   addRepoUser,
 }
 
 func init() {
 	rootCmd.AddCommand(addRepoUserCmd)
 }
 
-func addRepoUser(_ *cobra.Command, args []string) error {
+func addRepoUser(_ *cobra.Command, args []string) {
 	repoName := args[0]
 	svnUserName := args[1]
 
+	defer log.StdErrOnPanicf(fmt.Errorf("could not add user '%s' for repo '%s'", svnUserName, repoName))
+
 	if !store.HasRepo(repoName) {
-		return errors.New("There is no repo with name " + repoName)
+		panic(fmt.Errorf("there is no repo with name %s", repoName))
 	}
 
 	fmt.Printf("Adding/overwriting SVN usr: %s\n", svnUserName)
@@ -39,6 +41,4 @@ func addRepoUser(_ *cobra.Command, args []string) error {
 	repo := store.GetRepo(repoName)
 	user := usr.CreateUser(&repo, svnUserName, pass, gitUserName, gitFullUserName, mail)
 	store.StoreUser(user)
-
-	return nil
 }

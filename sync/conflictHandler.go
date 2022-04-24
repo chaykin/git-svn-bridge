@@ -1,6 +1,7 @@
 package sync
 
 import (
+	"fmt"
 	"git-svn-bridge/rel"
 	"git-svn-bridge/repo"
 	"git-svn-bridge/store"
@@ -18,20 +19,17 @@ type conflictHandler struct {
 }
 
 // Creates special branch for manual conflicts resolution
-func (h *conflictHandler) handleConflict(ref string) (string, error) {
+func (h *conflictHandler) handleConflict(ref string) string {
 	branchName := gitutils.GetBranchName(ref)
 	conflictBranchName := h.createConflictBranchName()
 	relation := rel.New(branchName, conflictBranchName)
 	store.StoreRelation(h.man.repo, relation)
 
-	err := h.man.checkoutToOriginRef(ref)
-	if err != nil {
-		return "", err
-	}
+	h.man.checkoutToOriginRef(ref)
 
 	worktree, err := h.man.bridgeRepo.Worktree()
 	if err != nil {
-		return "", err
+		panic(fmt.Errorf("could not get worktree for repo '%s': %w", h.man.getBridgeRepoPath(), err))
 	}
 
 	err = worktree.Checkout(&git.CheckoutOptions{
@@ -39,10 +37,12 @@ func (h *conflictHandler) handleConflict(ref string) (string, error) {
 		Create: true,
 	})
 	if err != nil {
-		return "", err
+		panic(fmt.Errorf("could not checkout '%s' for repo '%s': %w", conflictBranchName, h.man.getBridgeRepoPath(), err))
 	}
 
-	return conflictBranchName, gitutils.Fetch(h.man.getCentralRepoPath(), "bridge", conflictBranchName)
+	gitutils.Fetch(h.man.getCentralRepoPath(), "bridge", conflictBranchName)
+
+	return conflictBranchName
 }
 
 func getParentRef(repo *repo.Repo, ref string) string {

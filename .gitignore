@@ -4,3 +4,4 @@ git-svn-bridge
 authorsFile.txt
 repos
 pid.lock
+errors.log

@@ -15,13 +15,11 @@ func storeItem(key string, item interface{}) {
 	var buf bytes.Buffer
 	enc := gob.NewEncoder(&buf)
 
-	err := enc.Encode(item)
-	if err != nil {
+	if err := enc.Encode(item); err != nil {
 		panic(fmt.Errorf("could not encode item for store: %w", err))
 	}
 
-	err = getStore().Write(key, buf.Bytes())
-	if err != nil {
+	if err := getStore().Write(key, buf.Bytes()); err != nil {
 		panic(fmt.Errorf("could not write item to store: %w", err))
 	}
 }
@@ -35,8 +33,7 @@ func getItem(key string, item interface{}) {
 	buf := bytes.NewBuffer(itemBytes)
 	dec := gob.NewDecoder(buf)
 
-	err = dec.Decode(item)
-	if err != nil {
+	if err := dec.Decode(item); err != nil {
 		panic(fmt.Errorf("could not decode item '%s': %w", key, err))
 	}
 }

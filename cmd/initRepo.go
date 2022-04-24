@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"git-svn-bridge/conf"
+	"git-svn-bridge/log"
 	"git-svn-bridge/repo"
 	"git-svn-bridge/store"
 	"git-svn-bridge/vcs/gitsvn"
@@ -19,87 +19,63 @@ var initRepoCmd = &cobra.Command{
 	Short: "Initialize repo",
 	Long:  "Initialize repo: create GIT server repo, bridge repo, config hooks, etc",
 	Args:  cobra.ExactArgs(1),
-	RunE:  initRepo,
+	Run:   initRepo,
 }
 
 func init() {
 	rootCmd.AddCommand(initRepoCmd)
 }
 
-func initRepo(_ *cobra.Command, args []string) error {
+func initRepo(_ *cobra.Command, args []string) {
 	repoName := args[0]
+
+	defer log.StdErrOnPanicf(fmt.Errorf("could not init repository '%s'", repoName))
+
 	if !store.HasRepo(repoName) {
-		return errors.New("There is no repo with name " + repoName)
+		panic(fmt.Errorf("there is no repository with name %s", repoName))
 	}
 
-	repo := store.GetRepo(repoName)
+	repository := store.GetRepo(repoName)
+	initGitRepo(&repository)
+	initBridgeRepo(&repository)
 
-	err := initGitRepo(&repo)
-	if err != nil {
-		return fmt.Errorf("could not init git repo '%s': %w", repoName, err)
-	}
-	err = initBridgeRepo(&repo)
-	if err != nil {
-		return fmt.Errorf("could not init bridge repo '%s': %w", repoName, err)
-	}
-
-	//TODO add hooks to git repo
-
-	return nil
+	//TODO add hooks to git repository
 }
 
-func initGitRepo(repo *repo.Repo) error {
+func initGitRepo(repo *repo.Repo) {
 	gitRepoPath := repo.GetGitRepoPath()
 	gitRepo, err := git.PlainInit(gitRepoPath, true)
 	if err != nil {
-		return fmt.Errorf("could not init git repo '%s': %w", repo.GetName(), err)
+		panic(fmt.Errorf("could not init git repo '%s': %w", gitRepoPath, err))
 	}
 
-	err = createRemote(gitRepo, "bridge", repo.GetBridgeRepoPath())
-	if err != nil {
-		return fmt.Errorf("could not create remote for git repo '%s': %w", repo.GetName(), err)
-	}
-
-	return nil
+	createRemote(gitRepo, "bridge", repo.GetBridgeRepoPath())
 }
 
-func initBridgeRepo(repo *repo.Repo) error {
+func initBridgeRepo(repo *repo.Repo) {
 	systemUser := store.GetUser(repo, conf.GetConfig().SystemGitUserName)
 	bridgeRepoPath := repo.GetBridgeRepoPath()
 
 	gitSvnExecutor := gitsvn.CreateExecutor(systemUser)
-	err := gitSvnExecutor.Init(bridgeRepoPath)
-	if err != nil {
-		return fmt.Errorf("could not init bridge repo '%s': %w", repo.GetName(), err)
-	}
-
-	err = gitSvnExecutor.Fetch(bridgeRepoPath)
-	if err != nil {
-		return fmt.Errorf("could not fetch bridge repo '%s': %w", repo.GetName(), err)
-	}
+	gitSvnExecutor.Init(bridgeRepoPath)
+	gitSvnExecutor.Fetch(bridgeRepoPath)
 
 	gitRepo, err := git.PlainOpen(bridgeRepoPath)
 	if err != nil {
-		return fmt.Errorf("could not open bridge repo '%s': %w", repo.GetName(), err)
+		panic(fmt.Errorf("could not open bridge repo '%s': %w", bridgeRepoPath, err))
 	}
 
-	err = createRemote(gitRepo, gitutils.GitCentralRepoName, repo.GetGitRepoPath())
-	if err != nil {
-		return fmt.Errorf("could not create remote for git repo '%s': %w", repo.GetName(), err)
-	}
+	createRemote(gitRepo, gitutils.GitCentralRepoName, repo.GetGitRepoPath())
 
-	err = gitRepo.Push(&git.PushOptions{RemoteName: gitutils.GitCentralRepoName})
-	if err != nil {
-		return fmt.Errorf("could not push from bridge repo '%s': %w", repo.GetName(), err)
+	if err := gitRepo.Push(&git.PushOptions{RemoteName: gitutils.GitCentralRepoName}); err != nil {
+		panic(fmt.Errorf("could not push bridge repo '%s': %w", bridgeRepoPath, err))
 	}
-
-	return nil
 }
 
-func createRemote(gitRepo *git.Repository, name, path string) error {
+func createRemote(gitRepo *git.Repository, name, path string) {
 	absPath, err := filepath.Abs(path)
 	if err != nil {
-		return fmt.Errorf("could not resolve absolute path for '%s': %w", path, err)
+		panic(fmt.Errorf("could not resolve absolute path for '%s': %w", path, err))
 	}
 
 	_, err = gitRepo.CreateRemote(&config.RemoteConfig{
@@ -107,5 +83,7 @@ func createRemote(gitRepo *git.Repository, name, path string) error {
 		URLs: []string{absPath},
 	})
 
-	return err
+	if err != nil {
+		panic(fmt.Errorf("could not create remote '%s': %w", path, err))
+	}
 }
