@@ -41,8 +41,8 @@ func initRepo(_ *cobra.Command, args []string) {
 	initBridgeRepo(&repository)
 
 	hookFactory := gitHook.New(&repository)
-	hookFactory.CreateUpdateHook()
-	//TODO add post-update hook to git repository
+	hookFactory.CreateHook("update")
+	hookFactory.CreateHook("post-update")
 }
 
 func initGitRepo(repo *repo.Repo) {

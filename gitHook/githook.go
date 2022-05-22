@@ -17,15 +17,15 @@ func New(repo *repo.Repo) *Factory {
 	return &Factory{repo: repo}
 }
 
-func (f *Factory) CreateUpdateHook() {
+func (f *Factory) CreateHook(hookName string) {
 	app := f.getApp()
 
-	hook := f.getHookTemplate("update.hook")
+	hook := f.getHookTemplate(hookName + ".hook")
 	hook = strings.ReplaceAll(hook, "${WORKDIR}", filepath.Dir(app))
 	hook = strings.ReplaceAll(hook, "${APP}", app)
 	hook = strings.ReplaceAll(hook, "${REPO}", f.repo.GetName())
 
-	f.writeHook("update", hook)
+	f.writeHook(hookName, hook)
 }
 
 func (f *Factory) getApp() string {

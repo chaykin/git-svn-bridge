@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -u
+# GIT_DIR (and possibly GIT_WORK_TREE) have to be unset, otherwise the script will not work from post-update hook
+# see http://serverfault.com/questions/107608/git-post-receive-hook-with-git-pull-failed-to-find-a-valid-git-directory/107703#107703
+unset $(git rev-parse --local-env-vars)
+
+cd ${WORKDIR}
+${APP} sync -r ${REPO} $@
+exit $?
