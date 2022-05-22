@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"git-svn-bridge/conf"
+	"git-svn-bridge/gitHook"
 	"git-svn-bridge/log"
 	"git-svn-bridge/repo"
 	"git-svn-bridge/store"
@@ -39,7 +40,9 @@ func initRepo(_ *cobra.Command, args []string) {
 	initGitRepo(&repository)
 	initBridgeRepo(&repository)
 
-	//TODO add hooks to git repository
+	hookFactory := gitHook.New(&repository)
+	hookFactory.CreateUpdateHook()
+	//TODO add post-update hook to git repository
 }
 
 func initGitRepo(repo *repo.Repo) {

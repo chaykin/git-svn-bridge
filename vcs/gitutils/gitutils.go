@@ -104,6 +104,11 @@ func Merge(repoPath, branch string) {
 	executeCommand(repoPath, command)
 }
 
+func GetMergeBase(repoPath, oldSha, newSha string) string {
+	command := fmt.Sprintf("git merge-base %s %s", newSha, oldSha)
+	return executeCommand(repoPath, command)
+}
+
 func AbortMerge(repoPath string) {
 	executeCommand(repoPath, "git merge --abort")
 }
@@ -117,12 +122,12 @@ func Fetch(repoPath, remote, branch string) {
 	executeCommand(repoPath, command)
 }
 
-func executeCommand(cmdDir, cmd string) {
+func executeCommand(cmdDir, cmd string) string {
 	commandArgs := strings.Split(cmd, " ")
 	systemCmd := exec.Command(commandArgs[0], commandArgs[1:]...)
 	if cmdDir != "" {
 		systemCmd.Dir = cmdDir
 	}
 
-	shell.ExecuteCommand(systemCmd)
+	return shell.ExecuteCommand(systemCmd)
 }

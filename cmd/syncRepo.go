@@ -10,7 +10,8 @@ import (
 var syncRepoName string
 var syncRepoCmd = &cobra.Command{
 	Use:   "sync <ref1>..<refN> ",
-	Short: "Create repository configuration",
+	Short: "Sync SVN and GIT repositories",
+	Long:  "Sync SVN and GIT repositories with bridge GIT repository in the middle",
 	Run:   syncRepo,
 }
 

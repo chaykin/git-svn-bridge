@@ -16,7 +16,7 @@ func InitLogging() {
 	config := conf.GetConfig()
 
 	var err error
-	if logFile, err = os.OpenFile(config.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0666); err != nil {
+	if logFile, err = os.OpenFile(config.LogFile, os.O_WRONLY|os.O_CREATE|os.O_APPEND, 0664); err != nil {
 		panic(fmt.Errorf("could not open log file: %w", err))
 	}
 

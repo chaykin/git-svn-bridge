@@ -1,0 +1,10 @@
+#!/bin/bash
+
+set -u
+refName=$1
+shaOld=$2
+shaNew=$3
+
+cd ${WORKDIR}
+${APP} pre-sync -r ${REPO} $refName $shaOld $shaNew
+exit $?
