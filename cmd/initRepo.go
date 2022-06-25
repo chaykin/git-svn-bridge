@@ -12,9 +12,11 @@ import (
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/config"
 	"github.com/spf13/cobra"
+	"os"
 	"path/filepath"
 )
 
+var initRepoContinue bool
 var initRepoCmd = &cobra.Command{
 	Use:   "init <repo-name>",
 	Short: "Initialize repo",
@@ -24,6 +26,7 @@ var initRepoCmd = &cobra.Command{
 }
 
 func init() {
+	initRepoCmd.PersistentFlags().BoolVarP(&initRepoContinue, "continue", "c", false, "continue init repo")
 	rootCmd.AddCommand(initRepoCmd)
 }
 
@@ -47,6 +50,11 @@ func initRepo(_ *cobra.Command, args []string) {
 
 func initGitRepo(repo *repo.Repo) {
 	gitRepoPath := repo.GetGitRepoPath()
+	_, err := os.Stat(gitRepoPath)
+	if err == nil && initRepoContinue {
+		return
+	}
+
 	gitRepo, err := git.PlainInit(gitRepoPath, true)
 	if err != nil {
 		panic(fmt.Errorf("could not init git repo '%s': %w", gitRepoPath, err))

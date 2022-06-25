@@ -77,7 +77,7 @@ func (c *CommandExecutor) createAuthorsFile() {
 	}()
 
 	for _, user := range users {
-		author := fmt.Sprintf("%s = %s <%s>", user.GetSvnUserName(), user.GetGitUserFullName(), user.GetEmail())
+		author := fmt.Sprintf("%s = %s <%s>", user.GetSvnUserName(), user.GetGitUserName(), user.GetEmail())
 		if _, err = fmt.Fprintln(writer, author); err != nil {
 			panic(fmt.Errorf("could not write to authors file: '%s': %w", fileName, err))
 		}
@@ -106,7 +106,7 @@ func (c *CommandExecutor) executeCommandEx(cmdDir, cmdName, cmdArgs string) {
 		}
 	}()
 
-	if _, err = io.WriteString(stdin, c.user.GetSvnPassword()); err != nil {
+	if _, err = io.WriteString(stdin, c.user.GetSvnPassword()+"\n"); err != nil {
 		panic(fmt.Errorf("could not write to stdin for command '%s': %w", command, err))
 	}
 

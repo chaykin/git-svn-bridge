@@ -9,6 +9,7 @@ import (
 	"git-svn-bridge/usr"
 	"git-svn-bridge/vcs/gitsvn"
 	"git-svn-bridge/vcs/gitutils"
+	"git-svn-bridge/vcs/svn"
 	"github.com/go-git/go-git/v5"
 	"github.com/go-git/go-git/v5/plumbing"
 	"strings"
@@ -53,13 +54,58 @@ func (man *Manager) SyncAllRefs() {
 	man.fetchSvnChanges()
 
 	allRefs := man.getAllRefs()
-	man.SyncRefs(allRefs)
+	existsRefs, refsForRemove := man.splitRefs(allRefs)
+	man.checkoutToRef("refs/heads/master")
+	for _, ref := range refsForRemove {
+		gitutils.RemoveBranch(man.bridgeRepo, man.getBridgeRepoPath(), ref)
+		gitutils.RemoveBranch(man.centralRepo, man.getCentralRepoPath(), ref)
+	}
+
+	man.SyncRefs(existsRefs)
 }
 
 func (man *Manager) SyncRefs(refs []string) {
 	for _, ref := range refs {
 		man.syncRef(ref)
 	}
+}
+
+func (man *Manager) splitRefs(allRefs []string) ([]string, []string) {
+	svnExec := svn.CreateExecutor(man.getSysUser())
+	svnBranches := svnExec.Branches()
+	svnTags := svnExec.Tags()
+
+	existsRefs := make([]string, 0)
+	refsForRemove := make([]string, 0)
+	for _, ref := range allRefs {
+		if strings.HasSuffix(ref, "/master") {
+			existsRefs = append(existsRefs, ref)
+			continue
+		}
+
+		exists := false
+		for _, svnBranch := range svnBranches {
+			if svnBranch != "" && strings.HasSuffix(ref, "/"+svnBranch) {
+				existsRefs = append(existsRefs, ref)
+				exists = true
+				break
+			}
+		}
+
+		for _, svnTag := range svnTags {
+			if svnTag != "" && strings.HasSuffix(ref, "/tags/"+svnTag) {
+				existsRefs = append(existsRefs, ref)
+				exists = true
+				break
+			}
+		}
+
+		if !exists {
+			refsForRemove = append(refsForRemove, ref)
+		}
+	}
+
+	return existsRefs, refsForRemove
 }
 
 func (man *Manager) syncRef(ref string) {
@@ -86,6 +132,13 @@ func (man *Manager) fetchGitChanges(ref string) {
 	man.checkoutToRef(ref)
 
 	centralRepoRefExists := gitutils.IsRefExists(man.centralRepo, ref)
+	if centralRepoRefExists == true {
+		//TODO something VERY STRANGE!!! First check is always true...
+		if !centralRepoRefExists {
+			panic(fmt.Errorf("something VERY STRANGE!!! True = False"))
+		}
+	}
+
 	if centralRepoRefExists {
 		branchName := gitutils.GetBranchName(ref)
 
@@ -141,9 +194,11 @@ func (man *Manager) tryCommit(gitUserName, ref string) {
 
 	defer func() {
 		if r := recover(); r != nil {
+			log.StdErrPrintf("Failed commit try: %w", r)
+
 			man.retryCount++
 			if man.retryCount >= maxRetryCount {
-				panic(fmt.Errorf("too many tries to push to SVN ror repo '%s'(%s): %s", man.repo.GetName(), ref, r))
+				panic(fmt.Errorf("too many tries to push to SVN for repo '%s'(%s): %s", man.repo.GetName(), ref, r))
 			}
 
 			// Guess somebody commit to SVN just now. Try to fetch changes again
@@ -166,7 +221,7 @@ func (man *Manager) pushRefToGit(ref string) {
 
 	// fetch changes to central repo master from SVN bridge master (note that cannot just
 	//`git push git-central-repo master` as that would trigger the central repo update hook and deadlock)
-	gitutils.Fetch(man.getCentralRepoPath(), "bridge", branchName)
+	gitutils.Fetch(man.getCentralRepoPath(), "bridge", ref)
 }
 
 // Checkout bridge repo detached head
@@ -200,6 +255,7 @@ func (man *Manager) checkoutToRef(ref string) {
 	}
 
 	branchName := gitutils.GetBranchName(ref)
+
 	if !refExists {
 		//checkout to origin branch first
 		branch := plumbing.NewRemoteReferenceName("origin", branchName)
@@ -210,7 +266,7 @@ func (man *Manager) checkoutToRef(ref string) {
 	}
 
 	err = worktree.Checkout(&git.CheckoutOptions{
-		Branch: plumbing.NewBranchReferenceName(gitutils.GetBranchName(ref)),
+		Branch: plumbing.NewBranchReferenceName(branchName),
 		Create: !refExists,
 	})
 

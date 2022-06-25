@@ -5,7 +5,8 @@ dbCacheSize: 1024
 authorsFile: "authorsFile.txt"
 logWindowsSize: 10000
 
-systemGitUserName: "git-svn-bridge"
+systemGitUserName: "Git Svn Bridge"
+osGitUserName: "bridge-admin"
 commitMessageFormat: "%B"
 
 logFile: "errors.log"

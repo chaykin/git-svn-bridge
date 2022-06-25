@@ -36,9 +36,8 @@ func addRepoUser(_ *cobra.Command, args []string) {
 	//TODO: check mail valid
 	mail := readFieldFromInput("e-mail")
 	gitUserName := readFieldFromInput("Git user name")
-	gitFullUserName := readFieldFromInput("Git full user name")
 
 	repo := store.GetRepo(repoName)
-	user := usr.CreateUser(&repo, svnUserName, pass, gitUserName, gitFullUserName, mail)
+	user := usr.CreateUser(&repo, svnUserName, pass, gitUserName, mail)
 	store.StoreUser(user)
 }

@@ -17,6 +17,7 @@ type Config struct {
 	LogWindowsSize uint   `yaml:"logWindowsSize"`
 
 	SystemGitUserName   string `yaml:"systemGitUserName"`
+	OsGitUserName       string `yaml:"osGitUserName"`
 	CommitMessageFormat string `yaml:"commitMessageFormat"`
 
 	LogFile string `yaml:"logFile"`

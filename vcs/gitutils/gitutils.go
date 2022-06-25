@@ -38,7 +38,11 @@ func IsRefExists(gitRepo *git.Repository, refName string) bool {
 
 func GetBranchName(ref string) string {
 	index := strings.LastIndex(ref, "/")
-	return ref[index+1:]
+	name := ref[index+1:]
+	if strings.Contains(ref, "/tags/") {
+		name = "tags/" + name
+	}
+	return name
 }
 
 func PullAndRebase(repoPath, remote, branch string) {
@@ -65,7 +69,7 @@ func GetGitAuthor(repo *repo.Repo, repoPath string) string {
 
 	userName := strings.TrimRight(string(out), "\n")
 	for _, u := range store.GetAllUsers(repo) {
-		if u.GetGitUserFullName() == userName {
+		if u.GetGitUserName() == userName {
 			return u.GetGitUserName()
 		}
 	}
@@ -120,6 +124,15 @@ func AbortRebase(repoPath string) {
 func Fetch(repoPath, remote, branch string) {
 	command := fmt.Sprintf("git fetch %s %s:%s", remote, branch, branch)
 	executeCommand(repoPath, command)
+}
+
+func RemoveBranch(gitRepo *git.Repository, repoPath, ref string) {
+	refExists := IsRefExists(gitRepo, ref)
+	if refExists {
+		branchName := GetBranchName(ref)
+		command := fmt.Sprintf("git branch -D %s", branchName)
+		executeCommand(repoPath, command)
+	}
 }
 
 func executeCommand(cmdDir, cmd string) string {

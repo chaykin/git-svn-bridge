@@ -2,6 +2,7 @@ package gitHook
 
 import (
 	"fmt"
+	"git-svn-bridge/conf"
 	"git-svn-bridge/repo"
 	"io/ioutil"
 	"os"
@@ -21,6 +22,8 @@ func (f *Factory) CreateHook(hookName string) {
 	app := f.getApp()
 
 	hook := f.getHookTemplate(hookName + ".hook")
+	hook = strings.ReplaceAll(hook, "${OS_GIT_USERNAME}", conf.GetConfig().OsGitUserName)
+
 	hook = strings.ReplaceAll(hook, "${WORKDIR}", filepath.Dir(app))
 	hook = strings.ReplaceAll(hook, "${APP}", app)
 	hook = strings.ReplaceAll(hook, "${REPO}", f.repo.GetName())

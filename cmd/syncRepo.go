@@ -7,7 +7,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var syncRepoName string
+var syncRepoNames []string
 var syncRepoCmd = &cobra.Command{
 	Use:   "sync <ref1>..<refN> ",
 	Short: "Sync SVN and GIT repositories",
@@ -16,7 +16,7 @@ var syncRepoCmd = &cobra.Command{
 }
 
 func init() {
-	syncRepoCmd.PersistentFlags().StringVarP(&syncRepoName, "repo", "r", "", "repository name")
+	syncRepoCmd.PersistentFlags().StringArrayVarP(&syncRepoNames, "repo", "r", []string{}, "repository name")
 	if err := syncRepoCmd.MarkPersistentFlagRequired("repo"); err != nil {
 		log.Fatalf("could not init sync command: %w", err)
 	}
@@ -25,12 +25,14 @@ func init() {
 }
 
 func syncRepo(_ *cobra.Command, args []string) {
-	defer log.OnPanicf(fmt.Errorf("could not sync repository '%s'", syncRepoName))
+	defer log.OnPanicf(fmt.Errorf("could not sync repository(es) '%s'", syncRepoNames))
 
-	man := sync.New(syncRepoName)
-	if len(args) == 0 {
-		man.SyncAllRefs()
-	} else {
-		man.SyncRefs(args)
+	for _, repoName := range syncRepoNames {
+		man := sync.New(repoName)
+		if len(args) == 0 {
+			man.SyncAllRefs()
+		} else {
+			man.SyncRefs(args)
+		}
 	}
 }

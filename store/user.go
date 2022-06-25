@@ -7,15 +7,14 @@ import (
 )
 
 type userStoreItem struct {
-	SvnUserName     string
-	SvnPass         string
-	GitUserName     string
-	GitUserFullName string
-	Email           string
+	SvnUserName string
+	SvnPass     string
+	GitUserName string
+	Email       string
 }
 
 func StoreUser(user usr.User) {
-	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetGitUserFullName(), user.GetEmail()}
+	userStoreItem := userStoreItem{user.GetSvnUserName(), user.GetSvnPasswordEncrypted(), user.GetGitUserName(), user.GetEmail()}
 	storeItem(getUserKey(user.GetRepo(), user.GetGitUserName()), userStoreItem)
 }
 
@@ -23,7 +22,7 @@ func GetUser(repo *repo.Repo, gitUserName string) usr.User {
 	var storeItem userStoreItem
 	getItem(getUserKey(repo, gitUserName), &storeItem)
 
-	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
+	return usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.Email)
 }
 
 func GetAllUsers(repo *repo.Repo) []usr.User {
@@ -34,7 +33,7 @@ func GetAllUsers(repo *repo.Repo) []usr.User {
 	for userKey := range userKeysChan {
 		var storeItem userStoreItem
 		getItem(userKey, &storeItem)
-		user := usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.GitUserFullName, storeItem.Email)
+		user := usr.CreateEncryptedUser(repo, storeItem.SvnUserName, storeItem.SvnPass, storeItem.GitUserName, storeItem.Email)
 
 		users = append(users, user)
 	}

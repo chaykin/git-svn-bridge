@@ -19,7 +19,7 @@ func NewPreSync(repoName string) *PreSyncManager {
 func (pSyncMan *PreSyncManager) PreSync(ref, oldSha, newSha string) {
 	mergeBase := strings.TrimSpace(gitutils.GetMergeBase(pSyncMan.man.getCentralRepoPath(), oldSha, newSha))
 	if mergeBase != oldSha {
-		log.StdErrFatalf("Non-fast-forward commits are not allowed")
+		log.StdErrFatalf("Non-fast-forward commits are not allowed. Old SHA: '%s', merge base SHA: '%s'", oldSha, mergeBase)
 	}
 
 	branchName := gitutils.GetBranchName(ref)
