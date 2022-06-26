@@ -1,4 +1,4 @@
-#Git-Subversion Bridge
+# Git-Subversion Bridge
 
 It should be quite obvious to GitHub users why our team likes *git* - we branch, diff, merge and rebase heavily, work
 offline, stash, amend commits and do other *git*-specific things that make *git* so fun and useful.
@@ -21,7 +21,7 @@ This document gives an overview of the setup.
 If you have administrator access to the *Subversion* repository (we don't), be sure to check out
 [SubGit](http://subgit.com/). It may (or may not) make the setup simpler.
 
-##Overview and caveats
+## Overview and caveats
 
 * Each update of a branch in the central *git* repository will trigger synchronization with *Subversion*.
   Additionally, there is a *cron* job that runs the synchronization every *n* minutes (so that the repository is 
@@ -110,8 +110,7 @@ After synchronization, it will be duplicated with another commit that has come d
 For each branch merge, an additional squashed merge commit will come down from *Subversion* as shown in the previous
 section.
 
-Setup
------
+## Setup
 
 The following walkthrough is provided both for documentation and for hands-on testing (Example script can be found
 in scripts/test-sync.sh).
